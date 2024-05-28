@@ -8,9 +8,10 @@
 
 import h5
 import os
+import datetime
 import numpy as np
 from scipy.stats import norm
-from scipy.integrate import quad, trapz
+from scipy.integrate import trapezoid
 from pydlr import dlr
 
 ## Parameters
@@ -20,10 +21,10 @@ from pydlr import dlr
 IS_FERMIONIC = False
 
 # Output label
-output = "test"
+output = "validation"
 
 # The size of the dataset
-NB_DATA = 100
+NB_DATA = 200
 
 # The maximum number of peaks of A(\omega) or Pi(\omega)
 NB_PICS = 7
@@ -37,11 +38,12 @@ NB_TAU = 2001
 # The window of energy
 OMEGA_0 = 8.0
 
+# DLR accuracy
+EPS = 10**-10
+
 # The inverse temperature
 BETA = 4.0
 
-integral_tol = 1e-4
-NOISE_LEVEL = 1e-4
 
 ###################################################################################################
 
@@ -68,6 +70,7 @@ omega = np.linspace(-OMEGA_0, OMEGA_0, NB_OMEGA)
 ## Define the sum handlers function
 # Impose the bosonic target function to be odd
 def A_sum_handlers(x):
+    x = x[:, np.newaxis, np.newaxis]
     if IS_FERMIONIC:
         return np.sum(cancellator * norm.pdf(x, wr, sigma), axis=2).T
     else:
@@ -77,9 +80,9 @@ def A_sum_handlers(x):
 A = A_sum_handlers(omega)
 # Normalize A
 if IS_FERMIONIC:
-    NORMALIZATION_FACTOR = trapz(A, omega, axis=1)
+    NORMALIZATION_FACTOR = trapezoid(A, omega, axis=1)
 else:
-    NORMALIZATION_FACTOR = trapz(A[:, (NB_OMEGA + 1) // 2:], omega[(NB_OMEGA + 1) // 2:], axis=1)
+    NORMALIZATION_FACTOR = trapezoid(A[:, (NB_OMEGA + 1) // 2:], omega[(NB_OMEGA + 1) // 2:], axis=1)
 A = A / NORMALIZATION_FACTOR[:, np.newaxis]
 
 ## The Pi(\omega) are not necessarily normalized. Therefore a random factor is introduced
@@ -90,22 +93,50 @@ if not IS_FERMIONIC:
 ## Define the kernel handler function
 def kernel_handler(tau, x):
     if IS_FERMIONIC:
-        x = x[:, np.newaxis]
         expr1 = (x * (BETA - tau) >= 37) * np.exp(-x * tau) / (1 + np.exp(-x * BETA))
         expr2 = (x * (BETA - tau) < 37) * np.exp(x * (BETA - tau)) / (np.exp(BETA * x) + 1)
         return expr1 + expr2
     else:
-        return np.cosh(x[:, np.newaxis] * (tau - BETA / 2)) / np.sinh(x[:, np.newaxis] * BETA / 2)
-
-## Define the G handlers function
-def G_handlers(tau):
-    integrand = lambda x: kernel_handler(tau, x).T @ A_sum_handlers(x).T
-    if IS_FERMIONIC:
-        integral_result = np.array([quad(integrand, -OMEGA_0, OMEGA_0, epsabs=integral_tol)[0] for tau_i in tau])
-        return np.random.normal(loc=integral_result / NORMALIZATION_FACTOR[:, np.newaxis], scale=NOISE_LEVEL)
-    else:
-        integral_result = np.array([quad(integrand, 0, OMEGA_0, epsabs=integral_tol)[0] for tau_i in tau])
-        return np.random.normal(loc=integral_result / (NORMALIZATION_FACTOR * np.pi)[:, np.newaxis] * RANDOM_FACTOR[:, np.newaxis], scale=NOISE_LEVEL)
+        return np.cosh(x * (tau - BETA / 2)) / np.sinh(x * BETA / 2)
 
 taus = np.linspace(0, BETA, NB_TAU)
-G = G_handlers(taus).T
+
+# Precompute kernel values
+kernel_values = np.array([kernel_handler(tau, omega) for tau in taus])
+
+G = np.zeros((NB_DATA, NB_TAU))
+
+dlr_list = []
+d = dlr(lamb=BETA*OMEGA_0*1.25, eps=EPS, xi=-1 if IS_FERMIONIC else 1)
+dlr_times = d.get_tau(BETA)
+print(f"The number of DLR coefficients is {np.size(dlr_times)}.")
+
+# Compute G using vectorized operations
+for i in range(NB_DATA):
+    integrand = kernel_values * A[i]
+    if IS_FERMIONIC:
+        G[i] = -trapezoid(integrand, omega, axis=1)
+    else:
+        integrand_half = integrand[:, (NB_OMEGA + 1) // 2:]
+        omega_half = omega[(NB_OMEGA + 1) // 2:]
+        G[i] = trapezoid(integrand_half, omega_half, axis=1) / np.pi
+    # Compute DLR coefficients
+    G_dlr = d.lstsq_dlr_from_tau(taus[1:-1], G[i, 1:-1, np.newaxis, np.newaxis], BETA)
+    G_coeff = d.tau_from_dlr(G_dlr)
+    dlr_list.append(G_coeff[:, 0, 0])
+
+dlr_array = np.array(dlr_list)
+
+## Save the DLR coefficients and the target function
+try:
+    os.mkdir("Database")
+except:
+    pass
+
+time_suffix = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+
+with h5.HDFArchive(f"Database/{output}_{time_suffix}.h5") as B:
+    B["dlr"] = dlr_array
+    B["A"] = A
+
+print(f"Results are written in `Database/{output}_{time_suffix}.h5`")
