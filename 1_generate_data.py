@@ -27,7 +27,7 @@ output = "training"
 # The size of the dataset
 NB_DATA = 720
 
-# The maximum number of peaks of A(\omega) or Pi(\omega)
+# The maximum number of peaks of A(\omega) or Im[Pi(\omega)]
 NB_PICS = 7
 
 # The number of omega points between -OMEGA_0 and OMEGA_0
@@ -50,7 +50,7 @@ BETA = 4.0
 
 ## Generate Gaussian peaks
 # For A(\omega), peaks are generated between [-0.4*OMEGA_0, 0.4*OMEGA_0]
-# For Pi(\omega), peaks are generated between [0, 0.5*OMEGA_0]
+# For Im[Pi(\omega)], peaks are generated between [0, 0.5*OMEGA_0]
 if IS_FERMIONIC:
     wr = np.random.rand(1, NB_DATA, NB_PICS) * (0.8 * OMEGA_0) - (0.4 * OMEGA_0)
     sigma = np.random.rand(1, NB_DATA, NB_PICS) * (0.2 * OMEGA_0) + (0.02 * OMEGA_0)
@@ -77,7 +77,7 @@ def A_sum_handlers(x):
     else:
         return np.sum(cancellator * (norm.pdf(x, wr, sigma) - norm.pdf(x, -wr, sigma)), axis=2).T
 
-## Compute A(\omega) in fermionic case or Pi(\omega) in bosonic case
+## Compute A(\omega) in fermionic case or Im[Pi(\omega)] in bosonic case
 A = A_sum_handlers(omega)
 # Normalize A
 if IS_FERMIONIC:
@@ -86,7 +86,7 @@ else:
     NORMALIZATION_FACTOR = trapezoid(A[:, (NB_OMEGA + 1) // 2:], omega[(NB_OMEGA + 1) // 2:], axis=1)
 A = A / NORMALIZATION_FACTOR[:, np.newaxis]
 
-## The Pi(\omega) are not necessarily normalized. Therefore a random factor is introduced
+## The Im[Pi(\omega)] are not necessarily normalized. Therefore a random factor is introduced
 if not IS_FERMIONIC:
     RANDOM_FACTOR = np.random.rand(NB_DATA, 1) * 4 - 2
     A = A * RANDOM_FACTOR
