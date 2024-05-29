@@ -1,6 +1,8 @@
 ## 2_train_ACANN.py
 
-# This is the second step after training data are generated in the `Database/`.
+# This is the second step after training data are generated in the `Database/`. It uses a neural
+# network to fit the inverse functional, whose input is the Green's function (parametrized by DLR) 
+# and outputs the spectral function.
 
 import h5
 import torch
@@ -10,23 +12,30 @@ from torch.nn.modules.loss import KLDivLoss,L1Loss, SmoothL1Loss
 from torch.optim import Adam,Rprop,Adamax, RMSprop,SGD,LBFGS
 from torch.utils.data import DataLoader
 
-print(f"Using CUDA? {torch.cuda.is_available()}")
-print("Starting ACANN")
-
 # Put all the data to be used as a list here
 training_files = [
     "Database/training_20240528101533.h5",
     "Database/training_20240529041252.h5",
+    "Database/training_20240529055051.h5",
 ]
 validation_files = [
     "Database/validation_20240528101743.h5",
     "Database/validation_20240529040940.h5",
 ]
 
-# Create the network
+## Create the network
+# The first argument should be equal to the number of DLR coefficients
+# The second argument should be equal to the number of omega grid points
+# The third argument is how the layers and nodes arranged for the neural network
 model = ACANN(20, 2001, [43, 93, 200, 431, 929], drop_p=0.09).double()
 
 print("Model created")
+
+
+###################################################################################################
+
+print(f"Using CUDA? {torch.cuda.is_available()}")
+print("Starting ACANN")
 
 # Import the data
 training_data = load_data(training_files)

@@ -17,15 +17,15 @@ from pydlr import dlr
 ## Parameters
 
 # If IS_FERMIONIC is true, this code generates the A(\omega) and computes the G(\tau);
-# if IS_FERMIONIC is false, this code generates the Pi(\omega) and computes the Pi(\tau).
+# if IS_FERMIONIC is false, this code generates the Im[Pi(\omega)] and computes the Pi(\tau).
 # But the name used here are always A and G, even if bosonic.
 IS_FERMIONIC = False
 
-# Output label
+# Output label ("training" or "validation")
 output = "training"
 
 # The size of the dataset
-NB_DATA = 80
+NB_DATA = 720
 
 # The maximum number of peaks of A(\omega) or Pi(\omega)
 NB_PICS = 7
