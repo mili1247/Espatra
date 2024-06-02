@@ -14,13 +14,10 @@ from torch.utils.data import DataLoader
 
 # Put all the data to be used as a list here
 training_files = [
-    "Database/training_20240528101533.h5",
-    "Database/training_20240529041252.h5",
-    "Database/training_20240529055051.h5",
+    "Database/training_20240602104700.h5",
 ]
 validation_files = [
-    "Database/validation_20240528101743.h5",
-    "Database/validation_20240529040940.h5",
+    "Database/validation_20240602041001.h5",
 ]
 
 ## Create the network
@@ -40,8 +37,11 @@ print("Starting ACANN")
 # Import the data
 training_data = load_data(training_files)
 validation_data = load_data(validation_files)
-trainloader = DataLoader(training_data, batch_size=2000, shuffle=True)
-validationloader = DataLoader(validation_data, batch_size=1000)
+if training_data[1] != validation_data[1]:
+    raise ValueError("Inconsistent statistics for training and validation data")
+else: statistics = training_data[1]
+trainloader = DataLoader(training_data[0], batch_size=2000, shuffle=True)
+validationloader = DataLoader(validation_data[0], batch_size=1000)
 
 print("Training and validation data loaded successfully.")
 
@@ -94,6 +94,6 @@ for e in range(epochs):
 
 # Save the model
 time_suffix = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-torch.save(model.state_dict(),f'model_{time_suffix}.pth')
+torch.save(model.state_dict(),f'{statistics}_{time_suffix}.pth')
 
-print(f"Model is written in `model_{time_suffix}.pth`")
+print(f"Model is written in `{statistics}_{time_suffix}.pth`")

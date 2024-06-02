@@ -45,6 +45,7 @@ def load_data(files):
     A_list = []
     dlr_shape = None
     A_shape = None
+    statistics = None
 
     for data in files:
         with h5.HDFArchive(data, "r") as B:
@@ -55,11 +56,15 @@ def load_data(files):
                 dlr_shape = dlr_data.shape[1:]
             if A_shape is None:
                 A_shape = A_data.shape[1:]
+            if statistics is None:
+                statistics = B["statistics"]
 
             if dlr_data.shape[1:] != dlr_shape:
                 raise ValueError(f"Inconsistent shapes for dlr data: expected {dlr_shape}, got {dlr_data.shape[1:]}")
             if A_data.shape[1:] != A_shape:
                 raise ValueError(f"Inconsistent shapes for A data: expected {A_shape}, got {A_data.shape[1:]}")
+            if B["statistics"] != statistics:
+                raise ValueError("Inconsistent statistics")
 
             dlr_list.append(dlr_data)
             A_list.append(A_data)
@@ -67,4 +72,4 @@ def load_data(files):
     dlr_combined = torch.from_numpy(np.vstack(dlr_list)).double().to(device)
     A_combined = torch.from_numpy(np.vstack(A_list)).double().to(device)
 
-    return TensorDataset(dlr_combined, A_combined)
+    return TensorDataset(dlr_combined, A_combined), statistics
