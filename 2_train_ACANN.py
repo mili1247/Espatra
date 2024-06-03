@@ -14,10 +14,12 @@ from torch.utils.data import DataLoader
 
 # Put all the data to be used as a list here
 training_files = [
-    "Database/training_20240602104700.h5",
+    "Database/training_b_6400_20240603052009.h5",
+    "Database/training_b_6400_20240603054303.h5",
 ]
 validation_files = [
-    "Database/validation_20240602041001.h5",
+    "Database/validation_b_1600_20240603052313.h5",
+    "Database/validation_b_1600_20240603054641.h5",
 ]
 
 ## Create the network
@@ -40,8 +42,8 @@ validation_data = load_data(validation_files)
 if training_data[1] != validation_data[1]:
     raise ValueError("Inconsistent statistics for training and validation data")
 else: statistics = training_data[1]
-trainloader = DataLoader(training_data[0], batch_size=2000, shuffle=True)
-validationloader = DataLoader(validation_data[0], batch_size=1000)
+trainloader = DataLoader(training_data[0], batch_size=6400, shuffle=True)
+validationloader = DataLoader(validation_data[0], batch_size=1600)
 
 print("Training and validation data loaded successfully.")
 

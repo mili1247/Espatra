@@ -19,13 +19,13 @@ from pydlr import dlr
 # If IS_FERMIONIC is true, this code generates the A(\omega) and computes the G(\tau);
 # if IS_FERMIONIC is false, this code generates the Im[Pi(\omega)] and computes the Pi(\tau).
 # But the name used here are always A and G, even if bosonic.
-IS_FERMIONIC = True
+IS_FERMIONIC = False
 
 # Output label ("training" or "validation")
-output = "training"
+output = "validation"
 
 # The size of the dataset
-NB_DATA = 6400
+NB_DATA = 1600
 
 # The maximum number of peaks of A(\omega) or Im[Pi(\omega)]
 NB_PICS = 7
@@ -136,9 +136,9 @@ except:
 
 time_suffix = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
 
-with h5.HDFArchive(f"Database/{output}_{time_suffix}.h5", "w") as B:
+with h5.HDFArchive(f"Database/{output}_{'f' if IS_FERMIONIC else 'b'}_{NB_DATA}_{time_suffix}.h5", "w") as B:
     B["dlr"] = dlr_array
     B["A"] = A
     B["statistics"] = 'f' if IS_FERMIONIC else 'b'
 
-print(f"Results are written in `Database/{output}_{time_suffix}.h5`")
+print(f"Results are written in `Database/{output}_{'f' if IS_FERMIONIC else 'b'}_{NB_DATA}_{time_suffix}.h5`")

@@ -38,7 +38,7 @@ omega = np.linspace(-8, 8, 2001)
 
 ## Load the model, which should also be bosonic
 # `map_location` can be designated if training and evaluating are not on the same device
-model.load_state_dict(torch.load('model_20240529065211.pth', map_location=torch.device('cpu')))
+model.load_state_dict(torch.load('b_20240603080817.pth', map_location=torch.device('cpu')))
 model.eval()
 
 new_data = torch.from_numpy(dlr).unsqueeze(0).double()
